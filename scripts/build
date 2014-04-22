@@ -111,3 +111,10 @@ builder(baseDir)
   .save('distribution/adapters/backbone.bootstrap-modal.js')
   .uglify()
   .save('distribution/adapters/backbone.bootstrap-modal.min.js');
+
+//Tabset adapters
+builder(baseDir)
+  .load('lib/backbone.bootstrap-tabset/src/backbone.bootstrap-tabset.js')
+  .save('distribution/adapters/backbone.bootstrap-tabset.js')
+  .uglify()
+  .save('distribution/adapters/backbone.bootstrap-tabset.min.js');

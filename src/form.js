@@ -21,6 +21,7 @@ var Form = Backbone.View.extend({
    * @param {String} [options.idPrefix]
    * @param {Form.Field} [options.Field]
    * @param {Form.Fieldset} [options.Fieldset]
+   * @param {Form.Tabset} [options.Tabset]
    * @param {Function} [options.template]
    */
   initialize: function(options) {
@@ -50,6 +51,7 @@ var Form = Backbone.View.extend({
     //Override defaults
     var constructor = this.constructor;
     this.template = options.template || this.template || constructor.template;
+    this.Tabset = options.Tabset || this.Tabset || constructor.Tabset;
     this.Fieldset = options.Fieldset || this.Fieldset || constructor.Fieldset;
     this.Field = options.Field || this.Field || constructor.Field;
     this.NestedField = options.NestedField || this.NestedField || constructor.NestedField;
@@ -72,6 +74,29 @@ var Form = Backbone.View.extend({
     _.each(fieldsetSchema, function(itemSchema) {
       this.fieldsets.push(this.createFieldset(itemSchema));
     }, this);
+
+    //Create tabsets
+    var tabsetSchema = options.tabsets || _.result(this, 'tabsets') || [selectedFields],
+        tabsets = this.tabsets = [];
+    _.each(tabsetSchema, function(itemSchema) {
+      this.tabsets.push(this.createTabset(itemSchema));
+    }, this);
+  },
+
+  /**
+   * Creates a Tabset instance
+   *
+   * @param {String[]|Object[]} schema       Tabset schema
+   *
+   * @return {Form.Tabset}
+   */
+  createTabset: function(schema) {
+    var options = {
+      schema: schema,
+      fields: this.fields
+    };
+
+    return new this.Tabset(options);
   },
 
   /**
@@ -217,6 +242,18 @@ var Form = Backbone.View.extend({
 
       _.each(self.fieldsets, function(fieldset) {
         $container.append(fieldset.render().el);
+      });
+    });
+
+    //Render tabsets
+    $form.find('[data-tabsets]').add($form).each(function(i, el) {
+      var $container = $(el),
+          selection = $container.attr('data-tabsets');
+
+      if (_.isUndefined(selection)) return;
+
+      _.each(self.tabsets, function(tabset) {
+        $container.append(tabset.render().el);
       });
     });
 
@@ -381,7 +418,8 @@ var Form = Backbone.View.extend({
     if (this.hasFocus) return;
 
     //Get the first field
-    var fieldset = this.fieldsets[0],
+    var tabset = this.tabsets[0],
+        fieldset = this.fieldsets[0],
         field = fieldset.getFieldAt(0);
 
     if (!field) return;
@@ -426,6 +464,10 @@ var Form = Backbone.View.extend({
    * May be best to use XView to manage adding/removing views
    */
   remove: function() {
+    _.each(this.tabsets, function(tabset) {
+      tabset.remove();
+    });
+
     _.each(this.fieldsets, function(fieldset) {
       fieldset.remove();
     });
@@ -441,7 +483,7 @@ var Form = Backbone.View.extend({
 
   //STATICS
   template: _.template('\
-    <form data-fieldsets></form>\
+    <form data-fieldsets data-tabsets></form>\
   ', null, this.templateSettings),
 
   templateSettings: {
